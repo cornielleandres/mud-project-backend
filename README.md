@@ -1,2 +1,2 @@
-# mud_project
-MUD Project
+# mud_project_backend
+Back-end for MUD Project
