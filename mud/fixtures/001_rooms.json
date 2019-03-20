@@ -1,0 +1,20 @@
+[
+	{
+		"model": "mud.room",
+		"pk": 1,
+		"fields": {
+			"name": "First Room",
+			"description": "This is the first room.",
+			"n_to": 2
+		}
+	},
+	{
+		"model": "mud.room",
+		"pk": 2,
+		"fields": {
+			"name": "Second Room",
+			"description": "This is the second room.",
+			"s_to": 1
+		}
+	}
+]

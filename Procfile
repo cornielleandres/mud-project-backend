@@ -1,0 +1,1 @@
+web: gunicorn mud_project.wsgi:application --log-file -
