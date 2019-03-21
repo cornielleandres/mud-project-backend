@@ -128,7 +128,8 @@ REST_FRAMEWORK = {
     ),
 }
 
-CORS_ORIGIN_WHITELIST = config('ALLOWED_HOSTS').split(',')
+CORS_ORIGIN_WHITELIST = config('CORS_ORIGIN_WHITELIST').split(',')
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/2.1/topics/i18n/
