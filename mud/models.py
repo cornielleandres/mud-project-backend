@@ -21,14 +21,18 @@ class Player(models.Model):
 	user = models.OneToOneField(User, on_delete = models.CASCADE)
 	uuid = models.UUIDField(default = uuid.uuid4, unique = True)
 	current_room_id = models.IntegerField(default = 1)
-	def get_room(self):
-		return Room.objects.get(id = self.current_room_id)
 	def get_all_players(self, current_player_id):
 		return [
 			(p.user.username, p.uuid)
 			for p in Player.objects.all()
 			if p.id != int(current_player_id)
 		]
+	def get_player_info(self):
+		current_room = self.get_room()
+		current_room_info = { 'name': current_room.name, 'description': current_room.description }
+		return { 'username': self.user.username, 'current_room': current_room_info }
+	def get_room(self):
+		return Room.objects.get(id = self.current_room_id)
 	def __str__(self):
 		return self.user.username
 
