@@ -7,4 +7,5 @@ urlpatterns = [
 	url('player-info', api.player_info),
 	url('players', api.players),
 	url('rooms', api.rooms),
+	path('walk-in-direction/<str:dir>/', api.walk_in_direction),
 ]

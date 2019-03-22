@@ -26,3 +26,21 @@ def rooms(request):
 	rooms = Room.objects.all().values('name')
 	rooms = [ r['name'] for r in rooms ]
 	return JsonResponse({ 'rooms': rooms }, safe = True)
+
+@api_view(['POST'])
+def walk_in_direction(request, dir):
+	# walk in given direction
+	print("USER", request.user)
+	player = request.user.player
+	current_room = player.get_room()
+	if dir == 'N':
+		next_room_id = current_room.n_to
+	if dir == 'W':
+		next_room_id = current_room.w_to
+	if dir == 'E':
+		next_room_id = current_room.e_to
+	if dir == 'S':
+		next_room_id = current_room.s_to
+	player.current_room_id = next_room_id
+	player.save()
+	return JsonResponse({ 'currentRoom': player.get_room_info() })

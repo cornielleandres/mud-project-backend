@@ -14,6 +14,17 @@ class Room(models.Model):
 	w_to = models.IntegerField(default = 0)
 	def get_all_rooms(self):
 		return Room.objects.all()
+	def get_valid_directions(self):
+		valid_directions = {}
+		if self.n_to != 0:
+			valid_directions.update({ 'N': self.n_to })
+		if self.s_to != 0:
+			valid_directions.update({ 'S': self.s_to })
+		if self.e_to != 0:
+			valid_directions.update({ 'E': self.e_to })
+		if self.w_to != 0:
+			valid_directions.update({ 'W': self.w_to })
+		return valid_directions
 	def __str__(self):
 		return self.name
 
@@ -29,10 +40,21 @@ class Player(models.Model):
 		]
 	def get_player_info(self):
 		current_room = self.get_room()
-		current_room_info = { 'name': current_room.name, 'description': current_room.description }
-		return { 'username': self.user.username, 'current_room': current_room_info }
+		current_room_info = self.get_room_info()
+		return {
+			'currentRoom': current_room_info,
+			'username': self.user.username,
+		}
 	def get_room(self):
 		return Room.objects.get(id = self.current_room_id)
+	def get_room_info(self):
+		current_room = self.get_room()
+		current_room_info = {
+			'name': current_room.name,
+			'description': current_room.description,
+			'validDirections': current_room.get_valid_directions()
+		}
+		return current_room_info
 	def __str__(self):
 		return self.user.username
 
