@@ -3,6 +3,7 @@ from django.contrib.auth.models			import User
 from django.db.models.signals			import post_save
 from django.dispatch					import receiver
 from rest_framework.authtoken.models	import Token
+from rest_framework.exceptions			import NotFound
 import uuid
 
 class Room(models.Model):
@@ -46,7 +47,15 @@ class Player(models.Model):
 			'username': self.user.username,
 		}
 	def get_room(self):
-		return Room.objects.get(id = self.current_room_id)
+		try:
+			room = Room.objects.get(id = self.current_room_id)
+		except Room.DoesNotExist:
+			raise NotFound(
+				detail = 'That room does not exist. Did you provide an invalid direction?',
+				code = 404
+			)
+		else:
+			return room
 	def get_room_info(self):
 		current_room = self.get_room()
 		current_room_info = {
