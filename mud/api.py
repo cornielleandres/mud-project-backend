@@ -30,17 +30,24 @@ def rooms(request):
 @api_view(['POST'])
 def walk_in_direction(request, dir):
 	# walk in given direction
-	print("USER", request.user)
 	player = request.user.player
 	current_room = player.get_room()
 	if dir == 'N':
+		dir = 'north'
 		next_room_id = current_room.n_to
 	if dir == 'W':
+		dir = 'west'
 		next_room_id = current_room.w_to
 	if dir == 'E':
+		dir = 'east'
 		next_room_id = current_room.e_to
 	if dir == 'S':
+		dir = 'south'
 		next_room_id = current_room.s_to
 	player.current_room_id = next_room_id
+	new_room_info = player.get_room_info()
 	player.save()
-	return JsonResponse({ 'currentRoom': player.get_room_info() })
+	return JsonResponse({
+		'adventureHistory': [ 'You walked %s.' % dir ],
+		'currentRoom': new_room_info
+	})
