@@ -26,8 +26,8 @@ class Room(models.Model):
 		if self.s_to != 0:
 			valid_directions.update({ 'S': self.s_to })
 		return valid_directions
-	def get_room_info(self):
-		item_objects = Item.objects.filter(room = self.id)
+	def get_room_info(self, inventory_ids):
+		item_objects = Item.objects.filter(room = self.id).exclude(id__in = inventory_ids)
 		items = [ { 'name': item.name, 'description': item.description } for item in item_objects ]
 		current_room_info = {
 			'name': self.name,
@@ -50,12 +50,22 @@ class Player(models.Model):
 			if p.id != int(current_player_id)
 		]
 	def get_player_info(self):
+		inventory = self.get_inventory()
 		current_room = self.get_room()
-		current_room_info = current_room.get_room_info()
+		current_room_info = current_room.get_room_info(inventory['ids'])
 		return {
 			'currentRoom': current_room_info,
+			'inventory': inventory['info'],
 			'username': self.user.username,
 		}
+	def get_inventory(self):
+		inventory_objects = Inventory.objects.filter(player = self.id)
+		info = []
+		ids = []
+		for i in inventory_objects:
+			info.append({ 'name': i.item.name, 'description': i.item.description })
+			ids.append(i.id)
+		return { 'info': info, 'ids': ids }
 	def get_room(self):
 		try:
 			room = Room.objects.get(id = self.current_room_id)
@@ -73,6 +83,15 @@ class Item(models.Model):
 	name = models.CharField(max_length = 32, default = 'default item name')
 	description = models.CharField(max_length = 512, default = 'default item description')
 	room = models.ForeignKey(Room, on_delete = models.CASCADE)
+	def __str__(self):
+		return self.name
+
+class Inventory(models.Model):
+	item = models.ForeignKey(Item, on_delete = models.CASCADE)
+	player = models.ForeignKey(Player, on_delete = models.CASCADE)
+	def __str__(self):
+		return self.item.name
+
 
 @receiver(post_save, sender = User)
 def create_user_player(sender, instance, created, **kwargs):
