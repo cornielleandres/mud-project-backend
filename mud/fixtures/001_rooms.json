@@ -3,8 +3,8 @@
 		"model": "mud.room",
 		"pk": 1,
 		"fields": {
-			"name": "First Room",
-			"description": "This is the first room.",
+			"name": "the entrance to the cave",
+			"description": "The night is calm and silent.",
 			"n_to": 2
 		}
 	},
@@ -12,8 +12,8 @@
 		"model": "mud.room",
 		"pk": 2,
 		"fields": {
-			"name": "Second Room",
-			"description": "This is the second room.",
+			"name": "the cave foyer",
+			"description": "The area is dimly lit by the moonlight.",
 			"s_to": 1
 		}
 	}
