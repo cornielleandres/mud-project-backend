@@ -1,0 +1,29 @@
+[
+	{
+		"model": "mud.item",
+		"pk": 1,
+		"fields": {
+			"name": "a lantern",
+			"description": "Looks like it still has some oil inside.",
+			"room": 2
+		}
+	},
+	{
+		"model": "mud.item",
+		"pk": 2,
+		"fields": {
+			"name": "a wooden shield",
+			"description": "You can use this to defend yourself.",
+			"room": 2
+		}
+	},
+	{
+		"model": "mud.item",
+		"pk": 3,
+		"fields": {
+			"name": "a wooden sword",
+			"description": "You can use this to attack.",
+			"room": 2
+		}
+	}
+]

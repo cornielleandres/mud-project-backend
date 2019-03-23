@@ -19,13 +19,23 @@ class Room(models.Model):
 		valid_directions = {}
 		if self.n_to != 0:
 			valid_directions.update({ 'N': self.n_to })
-		if self.s_to != 0:
-			valid_directions.update({ 'S': self.s_to })
-		if self.e_to != 0:
-			valid_directions.update({ 'E': self.e_to })
 		if self.w_to != 0:
 			valid_directions.update({ 'W': self.w_to })
+		if self.e_to != 0:
+			valid_directions.update({ 'E': self.e_to })
+		if self.s_to != 0:
+			valid_directions.update({ 'S': self.s_to })
 		return valid_directions
+	def get_room_info(self):
+		item_objects = Item.objects.filter(room = self.id)
+		items = [ { 'name': item.name, 'description': item.description } for item in item_objects ]
+		current_room_info = {
+			'name': self.name,
+			'description': self.description,
+			'items': items,
+			'validDirections': self.get_valid_directions()
+		}
+		return current_room_info
 	def __str__(self):
 		return self.name
 
@@ -41,7 +51,7 @@ class Player(models.Model):
 		]
 	def get_player_info(self):
 		current_room = self.get_room()
-		current_room_info = self.get_room_info()
+		current_room_info = current_room.get_room_info()
 		return {
 			'currentRoom': current_room_info,
 			'username': self.user.username,
@@ -56,16 +66,13 @@ class Player(models.Model):
 			)
 		else:
 			return room
-	def get_room_info(self):
-		current_room = self.get_room()
-		current_room_info = {
-			'name': current_room.name,
-			'description': current_room.description,
-			'validDirections': current_room.get_valid_directions()
-		}
-		return current_room_info
 	def __str__(self):
 		return self.user.username
+
+class Item(models.Model):
+	name = models.CharField(max_length = 32, default = 'default item name')
+	description = models.CharField(max_length = 512, default = 'default item description')
+	room = models.ForeignKey(Room, on_delete = models.CASCADE)
 
 @receiver(post_save, sender = User)
 def create_user_player(sender, instance, created, **kwargs):

@@ -45,7 +45,8 @@ def walk_in_direction(request, dir):
 		dir = 'south'
 		next_room_id = current_room.s_to
 	player.current_room_id = next_room_id
-	new_room_info = player.get_room_info()
+	next_room = player.get_room()
+	new_room_info = next_room.get_room_info()
 	player.save()
 	return JsonResponse({
 		'adventureHistory': [ 'You walked %s.' % dir ],
