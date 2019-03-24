@@ -12,9 +12,9 @@
 		"model": "mud.item",
 		"pk": 2,
 		"fields": {
-			"name": "shield",
-			"description": "You can use this to defend yourself.",
-			"room": 2
+			"name": "map",
+			"description": "It looks like a map of the cave.",
+			"room": 4
 		}
 	},
 	{
@@ -23,7 +23,43 @@
 		"fields": {
 			"name": "sword",
 			"description": "You can use this to attack.",
-			"room": 2
+			"room": 5
+		}
+	},
+	{
+		"model": "mud.item",
+		"pk": 4,
+		"fields": {
+			"name": "shield",
+			"description": "You can use this to defend yourself.",
+			"room": 6
+		}
+	},
+	{
+		"model": "mud.item",
+		"pk": 5,
+		"fields": {
+			"name": "treasure chest",
+			"description": "A chest filled with rubies and diamonds.",
+			"room": 7
+		}
+	},
+	{
+		"model": "mud.item",
+		"pk": 6,
+		"fields": {
+			"name": "sapphire dragon eggs",
+			"description": "A nest filled with one-of-a-kind dragon eggs.",
+			"room": 8
+		}
+	},
+	{
+		"model": "mud.item",
+		"pk": 7,
+		"fields": {
+			"name": "key",
+			"description": "A small unassuming key.",
+			"room": 9
 		}
 	}
 ]

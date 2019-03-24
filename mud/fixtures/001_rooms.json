@@ -4,7 +4,7 @@
 		"pk": 1,
 		"fields": {
 			"name": "the entrance to the cave",
-			"description": "The night is calm and silent.",
+			"description": "The night is calm and silent. North of you, the cave mount beckons.",
 			"n_to": 2
 		}
 	},
@@ -13,18 +13,87 @@
 		"pk": 2,
 		"fields": {
 			"name": "the cave foyer",
-			"description": "The area is dimly lit by the moonlight.",
-			"s_to": 1,
-			"n_to": 3
+			"description": "It's eerily silent. Dim moonlight filters in from the outside.",
+			"n_to": 3,
+			"s_to": 1
 		}
 	},
 	{
 		"model": "mud.room",
 		"pk": 3,
 		"fields": {
-			"name": "a long dark hallway",
-			"description": "You start to sense a sinister presence.",
+			"name": "a dark hallway",
+			"description": "A long stretch of emptiness appears to the north. A narrow passage bends to the west.",
+			"n_to": 5,
+			"w_to": 4,
 			"s_to": 2
+		}
+	},
+	{
+		"model": "mud.room",
+		"pk": 4,
+		"fields": {
+			"name": "a narrow passage",
+			"description": "You've found a map room!",
+			"e_to": 3
+		}
+	},
+	{
+		"model": "mud.room",
+		"pk": 5,
+		"fields": {
+			"name": "a grand overlook",
+			"description": "A steep cliff appears before you, falling into the darkness. Ahead to the north, a light flickers in the distance, but there is no way across the chasm. A faint warm glow comes from the east.",
+			"e_to": 6,
+			"s_to": 3
+		}
+	},
+	{
+		"model": "mud.room",
+		"pk": 6,
+		"fields": {
+			"name": "a large antechamber",
+			"description": "You start to sense a sinister presence. To the east, there is a bright light.",
+			"n_to": 9,
+			"w_to": 5,
+			"e_to": 7
+		}
+	},
+	{
+		"model": "mud.room",
+		"pk": 7,
+		"fields": {
+			"name": "a treasure chamber",
+			"description": "The smell of gold permeates the air. A room behind a locked door lays just beyond your reach to the south. Is there a way to open it?",
+			"w_to": 6,
+			"s_to": 8
+		}
+	},
+	{
+		"model": "mud.room",
+		"pk": 8,
+		"fields": {
+			"name": "a locked room",
+			"description": "Whatever is in here must be worth more than anything else in the cave to have been kept behind lock and key. The smell of fire and brimstone emanates from the east. Are you sure you want to be here?",
+			"n_to": 7,
+			"e_to": 10
+		}
+	},
+	{
+		"model": "mud.room",
+		"pk": 9,
+		"fields": {
+			"name": "a small alcove",
+			"description": "A mostly empty room lays barren. The only exit is to the south.",
+			"s_to": 6
+		}
+	},
+	{
+		"model": "mud.room",
+		"pk": 10,
+		"fields": {
+			"name": "the dragon's lair",
+			"description": "You've stumbled upon a an enormous sleeping dragon. It awakens and swifly blocks your retreat!"
 		}
 	}
 ]
