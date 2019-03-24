@@ -112,7 +112,7 @@ class Player(models.Model):
 	def place_item_in_inventory(self, item):
 		Inventory.objects.create(item = item, player = self)
 	def process_command(self, command):
-		split_command = command.lower().split()
+		split_command = command.lower().split(' ', 1)
 		if len(split_command) < 2:
 			raise ParseError(detail = 'Invalid command. Click on the question mark if you need help.')
 		if split_command[0] == 'get':
