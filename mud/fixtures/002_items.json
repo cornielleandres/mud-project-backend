@@ -3,7 +3,7 @@
 		"model": "mud.item",
 		"pk": 1,
 		"fields": {
-			"name": "a lantern",
+			"name": "lantern",
 			"description": "Looks like it still has some oil inside.",
 			"room": 2
 		}
@@ -12,7 +12,7 @@
 		"model": "mud.item",
 		"pk": 2,
 		"fields": {
-			"name": "a wooden shield",
+			"name": "shield",
 			"description": "You can use this to defend yourself.",
 			"room": 2
 		}
@@ -21,7 +21,7 @@
 		"model": "mud.item",
 		"pk": 3,
 		"fields": {
-			"name": "a wooden sword",
+			"name": "sword",
 			"description": "You can use this to attack.",
 			"room": 2
 		}
