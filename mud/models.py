@@ -3,7 +3,7 @@ from django.contrib.auth.models			import User
 from django.db.models.signals			import post_save
 from django.dispatch					import receiver
 from rest_framework.authtoken.models	import Token
-from rest_framework.exceptions			import APIException, NotFound, ParseError
+from rest_framework.exceptions			import NotFound, ParseError
 import uuid
 
 class Room(models.Model):
@@ -27,14 +27,21 @@ class Room(models.Model):
 			valid_directions.update({ 'S': self.s_to })
 		return valid_directions
 	def get_room_info(self, inventory_item_ids):
-		item_objects = Item.objects.filter(room = self.id).exclude(id__in = inventory_item_ids)
-		items = [ { 'name': item.name, 'description': item.description } for item in item_objects ]
-		current_room_info = {
-			'name': self.name,
-			'description': self.description,
-			'items': items,
-			'validDirections': self.get_valid_directions()
-		}
+		# if lantern is not in inventory and player is past room 2, limit room info shown
+		if 1 not in inventory_item_ids and self.id > 2: # lantern item id is 1
+			current_room_info = {
+				'name': self.name,
+				'description': 'This room is pitch black. Is there something that can be used to illuminate it?',
+				'items': [],
+			}
+		else:
+			item_objects = Item.objects.filter(room = self.id).exclude(id__in = inventory_item_ids)
+			items = [ { 'name': item.name, 'description': item.description } for item in item_objects ]
+			current_room_info = {
+				'name': self.name,
+				'description': self.description,
+				'items': items,
+			}
 		return current_room_info
 	def __str__(self):
 		return self.name
@@ -57,6 +64,7 @@ class Player(models.Model):
 			'currentRoom': current_room_info,
 			'inventory': inventory['info'],
 			'username': self.user.username,
+			'validDirections': current_room.get_valid_directions()
 		}
 	def get_inventory(self):
 		inventory_objects = Inventory.objects.filter(player = self.id)
@@ -81,18 +89,25 @@ class Player(models.Model):
 		else:
 			return True
 	def pick_up_item(self, item_name):
-		try:
-			item = Item.objects.get(name = item_name, room = self.current_room_id)
-		except Item.DoesNotExist:
-			raise NotFound(detail = 'There is no "{}" in this room. Did you spell the name correctly?'.format(item_name))
-		item_in_inventory = self.is_item_in_inventory(item.id)
-		if item_in_inventory:
-			raise APIException(detail = 'You already have a "{}" in your inventory.'.format(item_name))
-		self.place_item_in_inventory(item)
+		# if lantern is not in inventory and player is past room 2, do not allow pick up of items
+		if not self.is_item_in_inventory(1) and self.current_room_id > 2: # lantern item id is 1
+			adventure_history_entry = [ 'You fumble around in the darkness. Is there a light source somewhere?' ]
+		else:
+			try:
+				item_in_room = Item.objects.get(name = item_name, room = self.current_room_id)
+			except Item.DoesNotExist:
+				adventure_history_entry = [ 'There is no {} in this room. Did you spell the name correctly?'.format(item_name) ]
+			else:
+				item_in_inventory = self.is_item_in_inventory(item_in_room.id)
+				if item_in_inventory:
+					adventure_history_entry = [ 'You already picked up the {} from this room.'.format(item_name) ]
+				else:
+					self.place_item_in_inventory(item_in_room)
+					adventure_history_entry = [ 'You picked up a {}!'.format(item_name) ]
 		player_info = self.get_player_info()
 		return {
 			**player_info,
-			'adventureHistory': [ 'You picked up a {}!'.format(item_name) ],
+			'adventureHistory': adventure_history_entry,
 		}
 	def place_item_in_inventory(self, item):
 		Inventory.objects.create(item = item, player = self)
@@ -129,7 +144,7 @@ class Player(models.Model):
 		return self.user.username
 
 class Item(models.Model):
-	name = models.CharField(max_length = 32, default = 'default item name')
+	name = models.CharField(max_length = 32, unique = True, default = 'default item name')
 	description = models.CharField(max_length = 512, default = 'default item description')
 	room = models.ForeignKey(Room, on_delete = models.CASCADE)
 	def __str__(self):
