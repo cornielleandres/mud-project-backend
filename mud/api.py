@@ -28,26 +28,18 @@ def rooms(request):
 	return JsonResponse({ 'rooms': rooms }, safe = True)
 
 @api_view(['POST'])
+def send_command(request):
+	# process a command given by a player
+	body_unicode = request.body.decode('utf-8')
+	body = json.loads(body_unicode)
+	command = body['command']
+	player = request.user.player
+	command_response = player.process_command(command)
+	return JsonResponse(command_response)
+
+@api_view(['POST'])
 def walk_in_direction(request, dir):
 	# walk in given direction
 	player = request.user.player
-	current_room = player.get_room()
-	if dir == 'N':
-		dir = 'north'
-		next_room_id = current_room.n_to
-	if dir == 'W':
-		dir = 'west'
-		next_room_id = current_room.w_to
-	if dir == 'E':
-		dir = 'east'
-		next_room_id = current_room.e_to
-	if dir == 'S':
-		dir = 'south'
-		next_room_id = current_room.s_to
-	player.current_room_id = next_room_id
-	player_info = player.get_player_info()
-	player.save()
-	return JsonResponse({
-		**player_info,
-		'adventureHistory': [ 'You walked %s.' % dir ],
-	})
+	walk_response = player.walk_in_direction(dir)
+	return JsonResponse(walk_response)

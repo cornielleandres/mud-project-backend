@@ -3,7 +3,7 @@ from django.contrib.auth.models			import User
 from django.db.models.signals			import post_save
 from django.dispatch					import receiver
 from rest_framework.authtoken.models	import Token
-from rest_framework.exceptions			import NotFound
+from rest_framework.exceptions			import APIException, NotFound, ParseError
 import uuid
 
 class Room(models.Model):
@@ -26,8 +26,8 @@ class Room(models.Model):
 		if self.s_to != 0:
 			valid_directions.update({ 'S': self.s_to })
 		return valid_directions
-	def get_room_info(self, inventory_ids):
-		item_objects = Item.objects.filter(room = self.id).exclude(id__in = inventory_ids)
+	def get_room_info(self, inventory_item_ids):
+		item_objects = Item.objects.filter(room = self.id).exclude(id__in = inventory_item_ids)
 		items = [ { 'name': item.name, 'description': item.description } for item in item_objects ]
 		current_room_info = {
 			'name': self.name,
@@ -52,7 +52,7 @@ class Player(models.Model):
 	def get_player_info(self):
 		inventory = self.get_inventory()
 		current_room = self.get_room()
-		current_room_info = current_room.get_room_info(inventory['ids'])
+		current_room_info = current_room.get_room_info(inventory['item_ids'])
 		return {
 			'currentRoom': current_room_info,
 			'inventory': inventory['info'],
@@ -61,21 +61,70 @@ class Player(models.Model):
 	def get_inventory(self):
 		inventory_objects = Inventory.objects.filter(player = self.id)
 		info = []
-		ids = []
+		item_ids = []
 		for i in inventory_objects:
 			info.append({ 'name': i.item.name, 'description': i.item.description })
-			ids.append(i.id)
-		return { 'info': info, 'ids': ids }
+			item_ids.append(i.item.id)
+		return { 'info': info, 'item_ids': item_ids }
 	def get_room(self):
 		try:
 			room = Room.objects.get(id = self.current_room_id)
 		except Room.DoesNotExist:
-			raise NotFound(
-				detail = 'That room does not exist. Did you provide an invalid direction?',
-				code = 404
-			)
+			raise NotFound(detail = 'That room does not exist. Did you provide an invalid direction?')
 		else:
 			return room
+	def is_item_in_inventory(self, item_id):
+		try:
+			item = Inventory.objects.get(player = self.id, item = item_id)
+		except Inventory.DoesNotExist:
+			return False
+		else:
+			return True
+	def pick_up_item(self, item_name):
+		try:
+			item = Item.objects.get(name = item_name, room = self.current_room_id)
+		except Item.DoesNotExist:
+			raise NotFound(detail = 'There is no "{}" in this room. Did you spell the name correctly?'.format(item_name))
+		item_in_inventory = self.is_item_in_inventory(item.id)
+		if item_in_inventory:
+			raise APIException(detail = 'You already have a "{}" in your inventory.'.format(item_name))
+		self.place_item_in_inventory(item)
+		player_info = self.get_player_info()
+		return {
+			**player_info,
+			'adventureHistory': [ 'You picked up a {}!'.format(item_name) ],
+		}
+	def place_item_in_inventory(self, item):
+		Inventory.objects.create(item = item, player = self)
+	def process_command(self, command):
+		split_command = command.lower().split()
+		if len(split_command) < 2:
+			raise ParseError(detail = 'Invalid command. Click on the question mark if you need help.')
+		if split_command[0] == 'get':
+			item_name = split_command[1]
+			return self.pick_up_item(item_name)
+		raise ParseError(detail = 'Unhandled command. Click on the question mark if you need help.')
+	def walk_in_direction(self, dir):
+		current_room = self.get_room()
+		if dir == 'N':
+			dir = 'north'
+			next_room_id = current_room.n_to
+		if dir == 'W':
+			dir = 'west'
+			next_room_id = current_room.w_to
+		if dir == 'E':
+			dir = 'east'
+			next_room_id = current_room.e_to
+		if dir == 'S':
+			dir = 'south'
+			next_room_id = current_room.s_to
+		self.current_room_id = next_room_id
+		player_info = self.get_player_info()
+		self.save()
+		return {
+			**player_info,
+			'adventureHistory': [ 'You walked {}.'.format(dir) ],
+		}
 	def __str__(self):
 		return self.user.username
 
