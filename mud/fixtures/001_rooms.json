@@ -14,7 +14,17 @@
 		"fields": {
 			"name": "the cave foyer",
 			"description": "The area is dimly lit by the moonlight.",
-			"s_to": 1
+			"s_to": 1,
+			"n_to": 3
+		}
+	},
+	{
+		"model": "mud.room",
+		"pk": 3,
+		"fields": {
+			"name": "a long dark hallway",
+			"description": "You start to sense a sinister presence.",
+			"s_to": 2
 		}
 	}
 ]
