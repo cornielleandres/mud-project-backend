@@ -38,6 +38,7 @@ class Room(models.Model):
 			item_objects = Item.objects.filter(room = self.id).exclude(id__in = inventory_item_ids)
 			items = [ { 'name': item.name, 'description': item.description } for item in item_objects ]
 			current_room_info = {
+				'id': self.id,
 				'name': self.name,
 				'description': self.description,
 				'items': items,
