@@ -51,12 +51,32 @@ class Player(models.Model):
 	user = models.OneToOneField(User, on_delete = models.CASCADE)
 	uuid = models.UUIDField(default = uuid.uuid4, unique = True)
 	current_room_id = models.IntegerField(default = 1)
+	max_hp = models.IntegerField(default = 100)
+	hp = models.IntegerField(default = 100)
+	attack = models.IntegerField(default = 25)
+	defense = models.IntegerField(default = 25)
 	def get_all_players(self, current_player_id):
 		return [
 			(p.user.username, p.uuid)
 			for p in Player.objects.all()
 			if p.id != int(current_player_id)
 		]
+	def get_battle_info(self, monster):
+		monster = Monster.objects.get(name = monster)
+		monster_battle_info = {
+			'name': monster.name,
+			'maxHp': monster.max_hp,
+			'hp': monster.hp,
+			'imgExtension': monster.img_extension
+		}
+		player_battle_info = {
+			'maxHp': self.max_hp,
+			'hp': self.hp
+		}
+		return {
+			'player': player_battle_info,
+			'monster': monster_battle_info
+		}
 	def get_player_info(self):
 		inventory = self.get_inventory()
 		current_room = self.get_room()
@@ -134,12 +154,23 @@ class Player(models.Model):
 		if dir == 'S':
 			dir = 'south'
 			next_room_id = current_room.s_to
-		self.current_room_id = next_room_id
-		player_info = self.get_player_info()
-		self.save()
+		adventure_history_entry = 'You walked {}.'.format(dir)
+		player_info = {}
+		if next_room_id == 8: # room with id 8 is the locked room
+			if self.is_item_in_inventory(7): # key item id is 7
+				adventure_history_entry = 'You unlocked the door and walked {}.'.format(dir)
+				self.current_room_id = next_room_id
+				player_info = self.get_player_info()
+				self.save()
+			else:
+				adventure_history_entry = 'The door is locked and won\'t budge. Is there some other way to open it?'
+		else:
+			self.current_room_id = next_room_id
+			player_info = self.get_player_info()
+			self.save()
 		return {
 			**player_info,
-			'adventureHistory': [ 'You walked {}.'.format(dir) ],
+			'adventureHistory': [ adventure_history_entry ],
 		}
 	def __str__(self):
 		return self.user.username
@@ -157,12 +188,19 @@ class Inventory(models.Model):
 	def __str__(self):
 		return self.item.name
 
+class Monster(models.Model):
+	name = models.CharField(max_length = 32, unique = True, default = 'default monster name')
+	max_hp = models.IntegerField(default = 100)
+	hp = models.IntegerField(default = 100)
+	attack = models.IntegerField(default = 50)
+	defense = models.IntegerField(default = 50)
+	img_extension = models.CharField(max_length = 8, default = 'png')
 
 @receiver(post_save, sender = User)
 def create_user_player(sender, instance, created, **kwargs):
 	if created:
-		Player.objects.create(user=instance)
-		Token.objects.create(user=instance)
+		Player.objects.create(user = instance)
+		Token.objects.create(user = instance)
 
 @receiver(post_save, sender = User)
 def save_user_player(sender, instance, **kwargs):

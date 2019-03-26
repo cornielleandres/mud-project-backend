@@ -6,6 +6,13 @@ from rest_framework.decorators	import api_view
 import json
 
 @api_view(['GET'])
+def battle_info(request, monster):
+	# return battle info
+	player = request.user.player
+	battle_info = player.get_battle_info(monster)
+	return JsonResponse(battle_info)
+
+@api_view(['GET'])
 def player_info(request):
 	# return player info
 	player = request.user.player
