@@ -48,8 +48,8 @@
 		"model": "mud.item",
 		"pk": 6,
 		"fields": {
-			"name": "sapphire dragon eggs",
-			"description": "A nest filled with one-of-a-kind dragon eggs.",
+			"name": "sapphire dragon egg",
+			"description": "A one-of-a-kind sapphire dragon egg.",
 			"room": 8
 		}
 	},
