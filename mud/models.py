@@ -1,10 +1,20 @@
+from decouple							import config
 from django.db							import models
 from django.contrib.auth.models			import User
 from django.db.models.signals			import post_save
 from django.dispatch					import receiver
 from rest_framework.authtoken.models	import Token
 from rest_framework.exceptions			import NotFound, ParseError
+import pusher
 import uuid
+
+pusher_client = pusher.Pusher(
+	app_id = config('PUSHER_APP_ID'),
+	key = config('PUSHER_KEY'),
+	secret = config('PUSHER_SECRET'),
+	cluster = config('PUSHER_CLUSTER'),
+	ssl = True
+)
 
 class Room(models.Model):
 	name = models.CharField(max_length = 32, default = 'default room name')
@@ -52,12 +62,6 @@ class Player(models.Model):
 	uuid = models.UUIDField(default = uuid.uuid4, unique = True)
 	current_room_id = models.IntegerField(default = 1)
 	max_hp = models.IntegerField(default = 100)
-	def get_all_players(self, current_player_id):
-		return [
-			(p.user.username, p.uuid)
-			for p in Player.objects.all()
-			if p.id != int(current_player_id)
-		]
 	def get_battle_info(self, monster_name):
 		try:
 			monster = Monster.objects.get(name = monster_name)
@@ -94,7 +98,6 @@ class Player(models.Model):
 				'player': player_battle_info,
 				'monster': monster_battle_info
 			}
-
 	def get_player_info(self):
 		inventory = self.get_inventory()
 		current_room = self.get_room()
@@ -103,6 +106,7 @@ class Player(models.Model):
 			'currentRoom': current_room_info,
 			'inventory': inventory['info'],
 			'username': self.user.username,
+			'uuid': self.uuid,
 			'validDirections': current_room.get_valid_directions()
 		}
 	def get_inventory(self):
@@ -113,6 +117,8 @@ class Player(models.Model):
 			info.append({ 'name': i.item.name, 'description': i.item.description })
 			item_ids.append(i.item.id)
 		return { 'info': info, 'item_ids': item_ids }
+	def get_player_uuids_in_room(self):
+		return [ p.uuid for p in Player.objects.filter(current_room_id = self.current_room_id) ]
 	def get_room(self):
 		try:
 			room = Room.objects.get(id = self.current_room_id)
@@ -201,6 +207,9 @@ class Player(models.Model):
 		if split_command[0] == 'get':
 			item_name = split_command[1]
 			return self.pick_up_item(item_name)
+		if split_command[0] == 'say':
+			say_command = split_command[1]
+			return self.say(say_command)
 		raise ParseError(detail = 'Unhandled command. Click on the question mark if you need help.')
 	def restart_game(self):
 		self.current_room_id = 1
@@ -211,6 +220,19 @@ class Player(models.Model):
 		battle = Battle.objects.filter(player = self.id)
 		battle.delete()
 		return self.get_player_info()
+	def say(self, say_command):
+		uuids = self.get_player_uuids_in_room()
+		for uuid in uuids:
+			pusher_client.trigger(
+				'player-{}'.format(uuid),
+				'get-say',
+				{ 'player': self.user.username, 'say': say_command }
+			)
+		player_info = self.get_player_info()
+		return {
+			**player_info,
+			'adventureHistory': [],
+		}
 	def walk_in_direction(self, dir):
 		current_room = self.get_room()
 		if dir == 'N':
