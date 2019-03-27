@@ -62,6 +62,8 @@ class Player(models.Model):
 	uuid = models.UUIDField(default = uuid.uuid4, unique = True)
 	current_room_id = models.IntegerField(default = 1)
 	max_hp = models.IntegerField(default = 100)
+	def get_all_player_uuids(self):
+		return [ p.uuid for p in Player.objects.all() ]
 	def get_battle_info(self, monster_name):
 		try:
 			monster = Monster.objects.get(name = monster_name)
@@ -208,8 +210,11 @@ class Player(models.Model):
 			item_name = split_command[1]
 			return self.pick_up_item(item_name)
 		if split_command[0] == 'say':
-			say_command = split_command[1]
-			return self.say(say_command)
+			say_text = split_command[1]
+			return self.say(say_text)
+		if split_command[0] == 'shout':
+			shout_text = split_command[1]
+			return self.shout(shout_text)
 		raise ParseError(detail = 'Unhandled command. Click on the question mark if you need help.')
 	def restart_game(self):
 		self.current_room_id = 1
@@ -220,13 +225,26 @@ class Player(models.Model):
 		battle = Battle.objects.filter(player = self.id)
 		battle.delete()
 		return self.get_player_info()
-	def say(self, say_command):
+	def say(self, say_text):
 		uuids = self.get_player_uuids_in_room()
 		for uuid in uuids:
 			pusher_client.trigger(
 				'player-{}'.format(uuid),
 				'get-say',
-				{ 'player': self.user.username, 'say': say_command }
+				{ 'player': self.user.username, 'say': say_text }
+			)
+		player_info = self.get_player_info()
+		return {
+			**player_info,
+			'adventureHistory': [],
+		}
+	def shout(self, shout_text):
+		uuids = self.get_all_player_uuids()
+		for uuid in uuids:
+			pusher_client.trigger(
+				'player-{}'.format(uuid),
+				'get-shout',
+				{ 'player': self.user.username, 'shout': shout_text }
 			)
 		player_info = self.get_player_info()
 		return {
