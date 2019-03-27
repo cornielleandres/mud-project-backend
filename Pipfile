@@ -15,6 +15,7 @@ django-allauth = "*"
 gunicorn = "*"
 django-rest-api = "*"
 "psycopg2-binary" = "*"
+pusher = "*"
 
 [dev-packages]
 pylint = "*"
