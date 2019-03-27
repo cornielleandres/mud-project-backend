@@ -5,12 +5,32 @@ from .models					import *
 from rest_framework.decorators	import api_view
 import json
 
+@api_view(['POST'])
+def attack_monster(request):
+	# attack monster
+	body_unicode = request.body.decode('utf-8')
+	body = json.loads(body_unicode)
+	monster_name = body['monsterName']
+	player = request.user.player
+	attack_response = player.process_attack(monster_name)
+	return JsonResponse(attack_response)
+
 @api_view(['GET'])
-def battle_info(request, monster):
+def battle_info(request, monster_name):
 	# return battle info
 	player = request.user.player
-	battle_info = player.get_battle_info(monster)
+	battle_info = player.get_battle_info(monster_name)
 	return JsonResponse(battle_info)
+
+@api_view(['POST'])
+def monster_attacks(request):
+	# monster attacks
+	body_unicode = request.body.decode('utf-8')
+	body = json.loads(body_unicode)
+	monster_name = body['monsterName']
+	player = request.user.player
+	attack_response = player.process_monster_attack(monster_name)
+	return JsonResponse(attack_response)
 
 @api_view(['GET'])
 def player_info(request):
@@ -26,6 +46,13 @@ def players(request):
 	player_id = player.id
 	current_players = player.get_all_players(player_id)
 	return JsonResponse({ 'players': current_players }, safe = True)
+
+@api_view(['GET'])
+def restart_game(request):
+	# restart game
+	player = request.user.player
+	reset_player_info = player.restart_game()
+	return JsonResponse(reset_player_info)
 
 @api_view(['GET'])
 def rooms(request):

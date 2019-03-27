@@ -52,31 +52,49 @@ class Player(models.Model):
 	uuid = models.UUIDField(default = uuid.uuid4, unique = True)
 	current_room_id = models.IntegerField(default = 1)
 	max_hp = models.IntegerField(default = 100)
-	hp = models.IntegerField(default = 100)
-	attack = models.IntegerField(default = 25)
-	defense = models.IntegerField(default = 25)
 	def get_all_players(self, current_player_id):
 		return [
 			(p.user.username, p.uuid)
 			for p in Player.objects.all()
 			if p.id != int(current_player_id)
 		]
-	def get_battle_info(self, monster):
-		monster = Monster.objects.get(name = monster)
-		monster_battle_info = {
-			'name': monster.name,
-			'maxHp': monster.max_hp,
-			'hp': monster.hp,
-			'imgExtension': monster.img_extension
-		}
-		player_battle_info = {
-			'maxHp': self.max_hp,
-			'hp': self.hp
-		}
-		return {
-			'player': player_battle_info,
-			'monster': monster_battle_info
-		}
+	def get_battle_info(self, monster_name):
+		try:
+			monster = Monster.objects.get(name = monster_name)
+		except Monster.DoesNotExist:
+			raise NotFound(detail = 'That monster does not exist.')
+		else:
+			try:
+				battle = Battle.objects.get(player = self.id, monster = monster.id)
+			except Battle.DoesNotExist:
+				battle = Battle.objects.create(
+					player = self,
+					monster = monster,
+					player_hp = self.max_hp,
+					monster_hp = monster.max_hp
+				)
+			monster_battle_info = {
+				'name': monster.name,
+				'maxHp': monster.max_hp,
+				'hp': battle.monster_hp,
+				'imgExtension': monster.img_extension
+			}
+			player_battle_info = {
+				'maxHp': self.max_hp,
+				'hp': battle.player_hp
+			}
+			if battle.player_hp == 0:
+				game_over = monster.name
+			elif battle.monster_hp == 0:
+				game_over = True
+			else:
+				game_over = False
+			return {
+				'gameOver': game_over,
+				'player': player_battle_info,
+				'monster': monster_battle_info
+			}
+
 	def get_player_info(self):
 		inventory = self.get_inventory()
 		current_room = self.get_room()
@@ -132,6 +150,50 @@ class Player(models.Model):
 		}
 	def place_item_in_inventory(self, item):
 		Inventory.objects.create(item = item, player = self)
+	def process_monster_attack(self, monster_name):
+		monster = Monster.objects.get(name = monster_name)
+		battle = Battle.objects.get(player = self.id, monster = monster.id)
+		has_shield = self.is_item_in_inventory(4) # shield item id is 4
+		if has_shield:
+			battle.player_hp = battle.player_hp - 20
+			adventure_history_entry = 'The {} strikes back! You absorb the blow with your shield.'.format(monster_name)
+		else:
+			battle.player_hp = battle.player_hp - 35
+			adventure_history_entry = 'The {} strikes back! You have nothing to use to defend yourself.'.format(monster_name)
+		if battle.player_hp < 0: battle.player_hp = 0
+		battle.save()
+		updated_battle_info = self.get_battle_info(monster_name)
+		if battle.player_hp == 0:
+			game_over = monster_name
+		else:
+			game_over = False
+		return {
+			'adventureHistory': [ adventure_history_entry ],
+			'battle': updated_battle_info,
+			'gameOver': game_over
+		}
+	def process_attack(self, monster_name):
+		monster = Monster.objects.get(name = monster_name)
+		battle = Battle.objects.get(player = self.id, monster = monster.id)
+		has_sword = self.is_item_in_inventory(3) # sword item id is 3
+		if has_sword:
+			battle.monster_hp = battle.monster_hp - 25
+			adventure_history_entry = 'You swing your sword and strike!'
+		else:
+			battle.monster_hp = battle.monster_hp - 10
+			adventure_history_entry = 'You are unarmed. You take a swing.'
+		if battle.monster_hp < 0: battle.monster_hp = 0
+		battle.save()
+		updated_battle_info = self.get_battle_info(monster_name)
+		if battle.monster_hp == 0:
+			game_over = True
+		else:
+			game_over = False
+		return {
+			'adventureHistory': [ adventure_history_entry ],
+			'battle': updated_battle_info,
+			'gameOver': game_over
+		}
 	def process_command(self, command):
 		split_command = command.lower().split(' ', 1)
 		if len(split_command) < 2:
@@ -140,6 +202,15 @@ class Player(models.Model):
 			item_name = split_command[1]
 			return self.pick_up_item(item_name)
 		raise ParseError(detail = 'Unhandled command. Click on the question mark if you need help.')
+	def restart_game(self):
+		self.current_room_id = 1
+		self.max_hp = 100
+		self.save()
+		inventory = Inventory.objects.filter(player = self.id)
+		inventory.delete()
+		battle = Battle.objects.filter(player = self.id)
+		battle.delete()
+		return self.get_player_info()
 	def walk_in_direction(self, dir):
 		current_room = self.get_room()
 		if dir == 'N':
@@ -191,10 +262,13 @@ class Inventory(models.Model):
 class Monster(models.Model):
 	name = models.CharField(max_length = 32, unique = True, default = 'default monster name')
 	max_hp = models.IntegerField(default = 100)
-	hp = models.IntegerField(default = 100)
-	attack = models.IntegerField(default = 50)
-	defense = models.IntegerField(default = 50)
 	img_extension = models.CharField(max_length = 8, default = 'png')
+
+class Battle(models.Model):
+	player = models.ForeignKey(Player, on_delete = models.CASCADE)
+	monster = models.ForeignKey(Monster, on_delete = models.CASCADE)
+	player_hp = models.IntegerField(default = 100)
+	monster_hp = models.IntegerField(default = 100)
 
 @receiver(post_save, sender = User)
 def create_user_player(sender, instance, created, **kwargs):
