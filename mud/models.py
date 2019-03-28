@@ -119,6 +119,8 @@ class Player(models.Model):
 			info.append({ 'name': i.item.name, 'description': i.item.description })
 			item_ids.append(i.item.id)
 		return { 'info': info, 'item_ids': item_ids }
+	def get_player_by_name(self, player_name):
+		return [ p for p in Player.objects.all() if p.user.username == player_name ]
 	def get_player_uuids_in_room(self):
 		return [ p.uuid for p in Player.objects.filter(current_room_id = self.current_room_id) ]
 	def get_room(self):
@@ -203,18 +205,26 @@ class Player(models.Model):
 			'gameOver': game_over
 		}
 	def process_command(self, command):
-		split_command = command.lower().split(' ', 1)
-		if len(split_command) < 2:
-			raise ParseError(detail = 'Invalid command. Click on the question mark if you need help.')
-		if split_command[0] == 'get':
-			item_name = split_command[1]
-			return self.pick_up_item(item_name)
-		if split_command[0] == 'say':
-			say_text = split_command[1]
-			return self.say(say_text)
-		if split_command[0] == 'shout':
-			shout_text = split_command[1]
-			return self.shout(shout_text)
+		if command.startswith('whisper '):
+			split_command = command.lower().split(' ', 2)
+			if len(split_command) < 3:
+				raise ParseError(detail = 'Invalid whisper. Click on the question mark if you need help.')
+			player_name = split_command[1]
+			whisper_text = split_command[2]
+			return self.whisper(player_name, whisper_text)
+		else:
+			split_command = command.lower().split(' ', 1)
+			if len(split_command) < 2:
+				raise ParseError(detail = 'Invalid command. Click on the question mark if you need help.')
+			if split_command[0] == 'get':
+				item_name = split_command[1]
+				return self.pick_up_item(item_name)
+			if split_command[0] == 'say':
+				say_text = split_command[1]
+				return self.say(say_text)
+			if split_command[0] == 'shout':
+				shout_text = split_command[1]
+				return self.shout(shout_text)
 		raise ParseError(detail = 'Unhandled command. Click on the question mark if you need help.')
 	def restart_game(self):
 		self.current_room_id = 1
@@ -250,6 +260,25 @@ class Player(models.Model):
 		return {
 			**player_info,
 			'adventureHistory': [],
+		}
+	def whisper(self, player_name, whisper_text):
+		player = self.get_player_by_name(player_name)
+		if len(player) < 1:
+			raise NotFound(detail = 'Player "{}" does not exist.'.format(player_name))
+		player = player[0]
+		if self.current_room_id != player.current_room_id:
+			adventure_history_entry = [ '"{}" is in another room. You cannot whisper to them.'.format(player_name) ]
+		else:
+			adventure_history_entry = [ 'You whispered to {}: "{}"'.format(player_name, whisper_text) ]
+			pusher_client.trigger(
+				'player-{}'.format(player.uuid),
+				'get-whisper',
+				{ 'player': self.user.username, 'whisper': whisper_text }
+			)
+		player_info = self.get_player_info()
+		return {
+			**player_info,
+			'adventureHistory': adventure_history_entry,
 		}
 	def walk_in_direction(self, dir):
 		current_room = self.get_room()
