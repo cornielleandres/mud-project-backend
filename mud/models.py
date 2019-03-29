@@ -267,9 +267,9 @@ class Player(models.Model):
 			raise NotFound(detail = 'Player "{}" does not exist.'.format(player_name))
 		player = player[0]
 		if self.current_room_id != player.current_room_id:
-			adventure_history_entry = [ '"{}" is in another room. You cannot whisper to them.'.format(player_name) ]
+			adventure_history_entry = [ 'Adventurer {}> is in another room. You cannot whisper to them." '.format(player_name) ]
 		else:
-			adventure_history_entry = [ 'You whispered to {}: "{}"'.format(player_name, whisper_text) ]
+			adventure_history_entry = [ 'You whispered to {}>: "{}"'.format(player_name, whisper_text) ]
 			pusher_client.trigger(
 				'player-{}'.format(player.uuid),
 				'get-whisper',
