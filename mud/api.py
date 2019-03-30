@@ -37,6 +37,7 @@ def player_info(request):
 	# return player info
 	player = request.user.player
 	player_info = player.get_player_info()
+	player_info['currentRoomPlayers'] = player.get_players_in_current_room()
 	return JsonResponse(player_info)
 
 @api_view(['GET'])
@@ -52,6 +53,7 @@ def restart_game(request):
 	# restart game
 	player = request.user.player
 	reset_player_info = player.restart_game()
+	reset_player_info['currentRoomPlayers'] = player.get_players_in_current_room()
 	return JsonResponse(reset_player_info)
 
 @api_view(['GET'])
@@ -76,4 +78,5 @@ def walk_in_direction(request, dir):
 	# walk in given direction
 	player = request.user.player
 	walk_response = player.walk_in_direction(dir)
+	walk_response['currentRoomPlayers'] = player.get_players_in_current_room()
 	return JsonResponse(walk_response)

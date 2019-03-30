@@ -100,6 +100,10 @@ class Player(models.Model):
 				'player': player_battle_info,
 				'monster': monster_battle_info
 			}
+	def get_players_in_current_room(self):
+		players = Player.objects.filter(current_room_id = self.current_room_id).exclude(id = self.id)
+		players = [ p.user.username for p in players ]
+		return players
 	def get_player_info(self):
 		inventory = self.get_inventory()
 		current_room = self.get_room()
