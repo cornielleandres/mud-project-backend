@@ -125,8 +125,11 @@ class Player(models.Model):
 		return { 'info': info, 'item_ids': item_ids }
 	def get_player_by_name(self, player_name):
 		return [ p for p in Player.objects.all() if p.user.username == player_name ]
-	def get_player_uuids_in_room(self):
-		return [ p.uuid for p in Player.objects.filter(current_room_id = self.current_room_id) ]
+	def get_player_uuids_in_room(self, room_id):
+		return [
+			p.uuid
+			for p in Player.objects.filter(current_room_id = room_id).exclude(id = self.id)
+		]
 	def get_room(self):
 		try:
 			room = Room.objects.get(id = self.current_room_id)
@@ -240,13 +243,18 @@ class Player(models.Model):
 		battle.delete()
 		return self.get_player_info()
 	def say(self, say_text):
-		uuids = self.get_player_uuids_in_room()
+		uuids = self.get_player_uuids_in_room(self.current_room_id)
 		for uuid in uuids:
 			pusher_client.trigger(
 				'player-{}'.format(uuid),
 				'get-say',
 				{ 'player': self.user.username, 'say': say_text }
 			)
+		pusher_client.trigger(
+			'player-{}'.format(self.uuid),
+			'get-say',
+			{ 'player': self.user.username, 'say': say_text }
+		)
 		player_info = self.get_player_info()
 		return {
 			**player_info,
@@ -309,9 +317,23 @@ class Player(models.Model):
 			else:
 				adventure_history_entry = 'The door is locked and won\'t budge. Is there some other way to open it?'
 		else:
+			uuids = self.get_player_uuids_in_room(self.current_room_id)
+			for uuid in uuids:
+				pusher_client.trigger(
+					'player-{}'.format(uuid),
+					'player-left-room',
+					{ 'player': self.user.username }
+				)
 			self.current_room_id = next_room_id
 			player_info = self.get_player_info()
 			self.save()
+			uuids = self.get_player_uuids_in_room(self.current_room_id)
+			for uuid in uuids:
+				pusher_client.trigger(
+					'player-{}'.format(uuid),
+					'player-entered-room',
+					{ 'player': self.user.username }
+				)
 		return {
 			**player_info,
 			'adventureHistory': [ adventure_history_entry ],
