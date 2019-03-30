@@ -296,7 +296,6 @@ class Player(models.Model):
 		}
 	def walk_in_direction(self, dir):
 		current_room = self.get_room()
-		print("DIR IS ", dir)
 		if dir == 'n' or dir == 'north':
 			dir = 'north'
 			next_room_id = current_room.n_to
