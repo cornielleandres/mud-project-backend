@@ -16,6 +16,7 @@ gunicorn = "*"
 django-rest-api = "*"
 "psycopg2-binary" = "*"
 pusher = "*"
+dj-database-url = "*"
 
 [dev-packages]
 pylint = "*"
