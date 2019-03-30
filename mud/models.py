@@ -124,7 +124,7 @@ class Player(models.Model):
 			item_ids.append(i.item.id)
 		return { 'info': info, 'item_ids': item_ids }
 	def get_player_by_name(self, player_name):
-		return [ p for p in Player.objects.all() if p.user.username == player_name ]
+		return [ p for p in Player.objects.all() if p.user.username.lower() == player_name.lower() ]
 	def get_player_uuids_in_room(self, room_id):
 		return [
 			p.uuid
@@ -213,24 +213,24 @@ class Player(models.Model):
 		}
 	def process_command(self, command):
 		if command.startswith('whisper '):
-			split_command = command.lower().split(' ', 2)
+			split_command = command.split(' ', 2)
 			if len(split_command) < 3:
 				raise ParseError(detail = 'Invalid whisper. Click on the question mark if you need help.')
 			player_name = split_command[1]
-			whisper_text = split_command[2]
+			whisper_text = split_command[2].lower()
 			return self.whisper(player_name, whisper_text)
 		else:
-			split_command = command.lower().split(' ', 1)
+			split_command = command.split(' ', 1)
 			if len(split_command) < 2:
 				raise ParseError(detail = 'Invalid command. Click on the question mark if you need help.')
-			if split_command[0] == 'get':
+			if split_command[0].lower() == 'get':
 				item_name = split_command[1]
 				return self.pick_up_item(item_name)
-			if split_command[0] == 'say':
+			if split_command[0].lower() == 'say':
 				say_text = split_command[1]
 				return self.say(say_text)
-			if split_command[0] == 'shout':
-				shout_text = split_command[1]
+			if split_command[0].lower() == 'shout':
+				shout_text = split_command[1].upper()
 				return self.shout(shout_text)
 		raise ParseError(detail = 'Unhandled command. Click on the question mark if you need help.')
 	def restart_game(self):
@@ -279,9 +279,11 @@ class Player(models.Model):
 			raise NotFound(detail = 'Player "{}" does not exist.'.format(player_name))
 		player = player[0]
 		if self.current_room_id != player.current_room_id:
-			adventure_history_entry = [ 'Adventurer {}> is in another room. You cannot whisper to them." '.format(player_name) ]
+			adventure_history_entry = [ 'Adventurer {}> is in another room. You cannot whisper to them." '.format(player.user.username) ]
 		else:
-			adventure_history_entry = [ 'You whispered to {}>: "{}"'.format(player_name, whisper_text) ]
+			adventure_history_entry = [
+				'You whispered to {}>: "{}"'.format(player.user.username, whisper_text)
+			]
 			pusher_client.trigger(
 				'player-{}'.format(player.uuid),
 				'get-whisper',
@@ -294,18 +296,21 @@ class Player(models.Model):
 		}
 	def walk_in_direction(self, dir):
 		current_room = self.get_room()
-		if dir == 'N':
+		print("DIR IS ", dir)
+		if dir == 'n' or dir == 'north':
 			dir = 'north'
 			next_room_id = current_room.n_to
-		if dir == 'W':
+		elif dir == 'w' or dir == 'west':
 			dir = 'west'
 			next_room_id = current_room.w_to
-		if dir == 'E':
+		elif dir == 'e' or dir == 'east':
 			dir = 'east'
 			next_room_id = current_room.e_to
-		if dir == 'S':
+		elif dir == 's' or dir == 'south':
 			dir = 'south'
 			next_room_id = current_room.s_to
+		else:
+			raise ParseError(detail = 'Invalid direction. Click on the question mark if you need help.')
 		adventure_history_entry = 'You walked {}.'.format(dir)
 		player_info = {}
 		if next_room_id == 8: # room with id 8 is the locked room
