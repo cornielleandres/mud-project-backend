@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
+import dj_database_url
 from decouple                       import config
 from rest_framework.authentication  import SessionAuthentication, BasicAuthentication, TokenAuthentication
 
@@ -25,7 +26,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=False, cast=bool)
+DEBUG = config('DEBUG', default = False, cast = bool)
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS').split(',')
 
@@ -101,6 +102,8 @@ DATABASES = {
 	}
 }
 
+if DEBUG is False: # if in production, use production db
+    DATABASES['default'] = dj_database_url.config(default = config('DATABASE_URL'))
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
