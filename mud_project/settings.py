@@ -91,7 +91,12 @@ WSGI_APPLICATION = 'mud_project.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
-DATABASES = {
+DATABASES = {}
+
+if DEBUG is False: # if in production, use production db
+    DATABASES['default'] = dj_database_url.config(default = config('DATABASE_URL'))
+else: # else use dev db
+    DATABASES = {
 	'default': {
 		'ENGINE': config('ENGINE'),
 		'NAME': config('DATABASE'),
@@ -101,9 +106,6 @@ DATABASES = {
 		'PORT': '',
 	}
 }
-
-if DEBUG is False: # if in production, use production db
-    DATABASES['default'] = dj_database_url.config(default = config('DATABASE_URL'))
 
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
